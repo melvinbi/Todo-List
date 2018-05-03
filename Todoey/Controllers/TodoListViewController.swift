@@ -16,11 +16,16 @@ class TodoListViewController: UITableViewController {
     var titles  = [String]()
     var status  = [Bool]()
     
-    
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+
+        
+        
+        print (dataFilePath)
         
 //        let newItem = Item()
 //        newItem.title = "Find Mike"
@@ -33,12 +38,15 @@ class TodoListViewController: UITableViewController {
 //        let newItem3 = Item( )
 //        newItem3.title = "Destroy Demogorgon"
 //        itemArray.append(newItem3)
+
+        loadItems()
+        
         
 //        if let items = defaults.array(forKey: "TodoListArrayx") as? [Item] {
 //            itemArray = items
 //        }
 
-        restoreDefaults()
+//        restoreDefaults()
 
         
         
@@ -52,7 +60,7 @@ class TodoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
         
-        print("cellForRowAt IndexPath \(indexPath.row)")
+//        print("cellForRowAt IndexPath \(indexPath.row)")
         
         cell.textLabel?.text = itemArray[indexPath.row].title
 
@@ -69,13 +77,13 @@ class TodoListViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            print("itemArray.count = \(itemArray.count)")
+//            print("itemArray.count = \(itemArray.count)")
             return itemArray.count
     }
     
     //MARK - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print(indexPath.row)
+//        print(indexPath.row)
         
 
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
@@ -85,9 +93,11 @@ class TodoListViewController: UITableViewController {
         } else {
             tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
         }
-        
+//
 //        print(tableView.cellForRow(at: indexPath)!)
-        tableView.reloadData()
+
+        saveItems()
+
         tableView.deselectRow(at: indexPath, animated: true)
         
     }
@@ -115,6 +125,16 @@ class TodoListViewController: UITableViewController {
             newItem.title = textField.text!
             self.itemArray.append(newItem)
             
+            let encoder = PropertyListEncoder()
+            
+            do {
+                let data = try encoder.encode(self.itemArray)
+                try data.write(to: self.dataFilePath!)
+                
+            } catch {
+                print ("Error endoding item array, \(error)")
+            }
+            
             
 //            self.defaults.set(self.itemArray, forKey: "TodoListArrayx")
             self.storeDefaults()
@@ -127,21 +147,47 @@ class TodoListViewController: UITableViewController {
 //            print(alertTextField)
         }
         alert.addAction(action)
-        
+        saveItems()
         present(alert, animated: true, completion: nil)
     }
+
+    func saveItems(){
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to:  dataFilePath!)
+            
+        } catch {
+            print ("Error endoding item array, \(error)")
+        }
+        
+        
+    }
+    
+    func  loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+            itemArray = try decoder.decode([Item].self, from: data)
+            } catch{
+                print("Error decoding item array \(error)")
+            }
+        }
+    }
+    
     
     func storeDefaults(){
         titles = []
         status = []
         for count in itemArray{
             titles.append(count.title)
-            print("count.title = \(count.title)")
-            print("count.done = \(count.done)")
+//            print("count.title = \(count.title)")
+//            print("count.done = \(count.done)")
             status.append(count.done)
         }
-        print (status)
-        print (titles)
+//        print (status)
+//        print (titles)
         defaults.set(titles, forKey: "TodoListArrayTitles")
         defaults.set(status, forKey: "TodoListArrayStatus")
         titles = []
@@ -157,21 +203,21 @@ class TodoListViewController: UITableViewController {
         if let items = defaults.array(forKey: "TodoListArrayStatus") as? [Bool] {
             status = items
         }
-        print ("titles = \(titles)")
-        print ("status = \(status)")
+//        print ("titles = \(titles)")
+//        print ("status = \(status)")
         var x = 0
 
         while x < status.count {
             let tempItem = Item()
             tempItem.done = status[x]
             tempItem.title = titles[x]
-            print ("tempItem.title = \(titles[x]) \(tempItem.title), tempItem.done = \(status[x]) \(tempItem.done) x = \(x)")
+//            print ("tempItem.title = \(titles[x]) \(tempItem.title), tempItem.done = \(status[x]) \(tempItem.done) x = \(x)")
             itemArray.append(tempItem)
             x = x+1
         }
-        for count in itemArray {
-            print ("itemArray title = \(count.title), itemArray Status = \(count.done)")
-        }
+//        for count in itemArray {
+//            print ("itemArray title = \(count.title), itemArray Status = \(count.done)")
+//        }
         titles = []
         status = []
     }
