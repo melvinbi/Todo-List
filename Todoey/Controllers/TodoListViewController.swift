@@ -14,6 +14,11 @@ class TodoListViewController: UITableViewController{
   
     
     var itemArray = [Item]()
+    var selectedCategory : Category? {
+        didSet{
+            loadItems()
+        }
+    }
     var titles  = [String]()
     var status  = [Bool]()
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
@@ -41,7 +46,7 @@ class TodoListViewController: UITableViewController{
 //        newItem3.title = "Destroy Demogorgon"
 //        itemArray.append(newItem3)
 
-        loadItems()
+
         
         
 //        if let items = defaults.array(forKey: "TodoListArrayx") as? [Item] {
@@ -68,11 +73,6 @@ class TodoListViewController: UITableViewController{
 
         cell.accessoryType = itemArray[indexPath.row].done ? .checkmark : .none
         
-//        if itemArray[indexPath.row].done == true {
-//            cell.accessoryType = .checkmark
-//        } else {
-//            cell.accessoryType = .none
-//        }
         
         
         return cell
@@ -121,8 +121,6 @@ class TodoListViewController: UITableViewController{
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField = UITextField()
-    
-        
         let alert = UIAlertController(title: "Add New Item", message: "", preferredStyle: .alert)
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
@@ -133,6 +131,8 @@ class TodoListViewController: UITableViewController{
             let newItem = Item(context: self.context)
             newItem.title = textField.text!
             newItem.done = false
+            newItem.parentCategory = self.selectedCategory
+            
             self.itemArray.append(newItem)
             
            
@@ -167,8 +167,22 @@ class TodoListViewController: UITableViewController{
         
     }
     
-    func  loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest() ) {
+    func  loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil ) {
 //         let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+            
+        } else {
+            request.predicate = categoryPredicate
+        }
+        
+//        let compoundPredicate =  NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, predicate!])
+//
+//        request.predicate = compoundPredicate
+        
         do {
             itemArray = try context.fetch(request)
         } catch {
@@ -179,6 +193,7 @@ class TodoListViewController: UITableViewController{
 
     
     func storeDefaults(){
+    
         titles = []
         status = []
         for count in itemArray{
@@ -234,12 +249,12 @@ extension TodoListViewController: UISearchBarDelegate {
         let request : NSFetchRequest<Item> = Item.fetchRequest()
 //        print(searchBar.text!)
 
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
 
     
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
 
-        loadItems(with: request)
+        loadItems(with: request,predicate: predicate)
     
         
     }
